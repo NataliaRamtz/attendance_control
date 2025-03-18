@@ -6,39 +6,47 @@ import { DashboardLayout } from "../components/DashboardLayout"
 import { TeachersTable } from "../components/TeachersTable"
 import { SearchFilter } from "../components/common/SearchFilter"
 import { Plus } from "lucide-react"
-
+import { useApi } from "../contexts/ApiContext";
 
 function AdminTeachers({ onLogout }) {
-  const [showModal, setShowModal] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-
-  // Estado para el formulario
+  const { teachers } = useApi();
+  const [showModal, setShowModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     status: "Activo",
-  })
+  });
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-  }
+    });
+  };
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    // Aquí iría la lógica para guardar el nuevo docente
-    console.log("Nuevo docente:", formData)
-    setShowModal(false)
-    // Resetear el formulario
-    setFormData({
-      name: "",
-      email: "",
-      status: "Activo",
-    })
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await teachers.create({
+        name: formData.name,
+        email: formData.email,
+        password: "password", // Contraseña temporal
+        status: formData.status,
+      });
+      setShowModal(false);
+      setFormData({
+        name: "",
+        email: "",
+        status: "Activo",
+      });
+      // Recargar la lista de profesores
+    } catch (error) {
+      console.error("Error creando docente:", error);
+    }
+  };
+
 
   
 

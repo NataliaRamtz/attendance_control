@@ -5,23 +5,21 @@ import { Card, Button, Row, Col, Form, Modal } from "react-bootstrap"
 import { DashboardLayout } from "../components/DashboardLayout"
 import { StudentsTable } from "../components/StudentsTable"
 import { Plus, Search } from "lucide-react"
+import { useApi } from "../contexts/ApiContext"
 
 function AdminStudents({ onLogout }) {
+  const { students } = useApi()
   const [searchTerm, setSearchTerm] = useState("")
   const [showModal, setShowModal] = useState(false)
-  
-
-  // Estado para el formulario
   const [formData, setFormData] = useState({
     name: "",
-    matricula: "",
+    email: "",
     group: "",
     age: "",
     gender: "",
-    status: "Activo",
   })
-  
 
+  // Manejar cambios en el formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData({
@@ -30,30 +28,30 @@ function AdminStudents({ onLogout }) {
     })
   }
 
-  const handleSubmit = (e) => {
+  // Enviar formulario para crear un nuevo estudiante
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Aquí iría la lógica para guardar el nuevo alumno
-    console.log("Nuevo docente:", formData)
-    setShowModal(false)
-    // Resetear el formulario
-    setFormData({
-      name: "",
-      matricula: "",
-      group: "",
-      age: "",
-      gender: "",
-      status: "Activo",
-    })
+    try {
+      await students.create(formData)
+      setShowModal(false)
+      setFormData({
+        name: "",
+        email: "",
+        group: "",
+        age: "",
+        gender: "",
+      })
+      alert("Estudiante creado correctamente")
+    } catch (error) {
+      console.error("Error creando estudiante:", error)
+      alert("Error al crear el estudiante")
+    }
   }
 
   return (
     <DashboardLayout userRole="admin" onLogout={onLogout}>
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Gestión de Alumnos</h2>
-        {/*<Button variant="primary">
-          <Plus size={16} className="me-2" />
-          Agregar Alumno
-        </Button>*/}
         <Button variant="primary" onClick={() => setShowModal(true)}>
           <Plus size={16} className="me-2" />
           Agregar Alumno
@@ -78,12 +76,6 @@ function AdminStudents({ onLogout }) {
                 </div>
               </Form.Group>
             </Col>
-            {/*<Col lg={8} className="d-flex justify-content-lg-end mt-3 mt-lg-0">
-              <div className="d-flex gap-2">
-                <Button variant="outline-secondary">Exportar</Button>
-                <Button variant="outline-secondary">Imprimir</Button>
-              </div>
-            </Col>*/}
           </Row>
         </Card.Body>
       </Card>
@@ -97,7 +89,8 @@ function AdminStudents({ onLogout }) {
           <StudentsTable />
         </Card.Body>
       </Card>
-      {/* Modal para agregar nuevo alumno  */}
+
+      {/* Modal para agregar nuevo alumno */}
       <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
         <Modal.Header closeButton>
           <Modal.Title>Agregar Nuevo Alumno</Modal.Title>
@@ -107,17 +100,23 @@ function AdminStudents({ onLogout }) {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Nombre Completo</Form.Label>
-                  <Form.Control type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                  <Form.Label>Nombre</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Matricula</Form.Label>
+                  <Form.Label>Email</Form.Label>
                   <Form.Control
-                    type="text"
-                    name="matricula"
-                    value={formData.matricula}
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
                     required
                   />
@@ -129,14 +128,20 @@ function AdminStudents({ onLogout }) {
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Grupo</Form.Label>
-                  <Form.Control type="text" name="group" value={formData.group} onChange={handleInputChange} required />
+                  <Form.Control
+                    type="text"
+                    name="group"
+                    value={formData.group}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Edad</Form.Label>
                   <Form.Control
-                    type="text"
+                    type="number"
                     name="age"
                     value={formData.age}
                     onChange={handleInputChange}
@@ -149,19 +154,14 @@ function AdminStudents({ onLogout }) {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Genero</Form.Label>
-                  <Form.Select name="gender" value={formData.gender} onChange={handleInputChange}>
+                  <Form.Label>Género</Form.Label>
+                  <Form.Select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                  >
                     <option value="Femenino">Femenino</option>
                     <option value="Masculino">Masculino</option>
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-              <Form.Group className="mb-3">
-                  <Form.Label>Estado</Form.Label>
-                  <Form.Select name="status" value={formData.status} onChange={handleInputChange}>
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
                   </Form.Select>
                 </Form.Group>
               </Col>

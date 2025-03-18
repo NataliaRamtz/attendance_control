@@ -1,15 +1,11 @@
-"use client"
-
 import { createContext, useContext, useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { API_CONFIG } from "../config/api.config"
 
-// Crear el contexto de autenticación
 const AuthContext = createContext()
 
-// Hook personalizado para usar el contexto
 export const useAuth = () => useContext(AuthContext)
 
-// Proveedor del contexto
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(localStorage.getItem("token"))
@@ -17,28 +13,22 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null)
   const navigate = useNavigate()
 
-  // Verificar autenticación al cargar
+  // Verificar autenticación al cargar la aplicación
   useEffect(() => {
     const checkAuth = async () => {
-      if (token) {
+      const storedToken = localStorage.getItem("token")
+
+      if (storedToken) {
         try {
-          // En una implementación real, verificarías el token con el backend
-          // const response = await fetch(`${API_CONFIG.BASE_URL}/auth/verify`, {
-          //   headers: { Authorization: `Bearer ${token}` }
-          // })
+          const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
+            headers: { Authorization: storedToken }
+          })
 
-          // if (response.ok) {
-          //   const userData = await response.json()
-          //   setUser(userData)
-          // } else {
-          //   // Token inválido, limpiar estado
-          //   handleLogout()
-          // }
-
-          // Simulación para desarrollo
-          const storedUser = localStorage.getItem("user")
-          if (storedUser) {
-            setUser(JSON.parse(storedUser))
+          if (response.ok) {
+            const userData = await response.json()
+            setUser(userData)
+          } else {
+            handleLogout()
           }
         } catch (err) {
           setError("Error al verificar autenticación")
@@ -52,7 +42,7 @@ export function AuthProvider({ children }) {
     }
 
     checkAuth()
-  }, [token])
+  }, [])
 
   // Iniciar sesión
   const login = async (email, password) => {
@@ -60,42 +50,39 @@ export function AuthProvider({ children }) {
     setError(null)
 
     try {
-      // En una implementación real, harías una petición al backend
-      // const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email, password })
-      // })
+      // Paso 1: Iniciar sesión y obtener el token
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
 
-      // if (!response.ok) throw new Error('Credenciales inválidas')
-      // const data = await response.json()
+      if (!response.ok) throw new Error('Credenciales inválidas')
+      const data = await response.json()
 
-      // Simulación para desarrollo
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      // Guardar token en localStorage
+      localStorage.setItem("token", data.token)
 
-      let userData = null
-      let userToken = null
+      // Paso 2: Obtener información del usuario usando la ruta verify
+      const verifyResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
+        headers: { Authorization: data.token }
+      })
 
-      if (email === "admin@example.com" && password === "password") {
-        userData = { id: 1, name: "Admin", role: "admin" }
-        userToken = "admin-token-123"
-      } else if (email === "teacher@example.com" && password === "password") {
-        userData = { id: 2, name: "Profesor", role: "teacher" }
-        userToken = "teacher-token-456"
-      } else {
-        throw new Error("Credenciales inválidas")
-      }
+      if (!verifyResponse.ok) throw new Error('Error al obtener información del usuario')
+      const userData = await verifyResponse.json()
 
-      // Guardar datos en localStorage
-      localStorage.setItem("token", userToken)
-      localStorage.setItem("user", JSON.stringify(userData))
+      // Paso 3: Manejar el rol del usuario
+      const userRole = userData.role === "user" ? "teacher" : userData.role
+
+      // Guardar información del usuario en localStorage
+      localStorage.setItem("user", JSON.stringify({ ...userData, role: userRole }))
 
       // Actualizar estado
-      setToken(userToken)
-      setUser(userData)
+      setToken(data.token)
+      setUser({ ...userData, role: userRole })
 
-      // Redireccionar según rol
-      navigate(userData.role === "admin" ? "/admin/dashboard" : "/teacher/dashboard")
+      // Redireccionar según el rol
+      navigate(userRole === "admin" ? "/admin/dashboard" : "/teacher/dashboard")
 
       return userData
     } catch (err) {
@@ -108,15 +95,12 @@ export function AuthProvider({ children }) {
 
   // Cerrar sesión
   const handleLogout = () => {
-    // Limpiar localStorage
     localStorage.removeItem("token")
     localStorage.removeItem("user")
 
-    // Limpiar estado
     setToken(null)
     setUser(null)
 
-    // Redireccionar a login
     navigate("/login")
   }
 
@@ -142,4 +126,3 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   )
 }
-

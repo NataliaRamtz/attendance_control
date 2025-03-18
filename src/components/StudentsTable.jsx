@@ -1,44 +1,36 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Table, Modal, Form, Row, Col, Button, Badge, Dropdown } from "react-bootstrap"
 import { MoreHorizontal, Pencil, Trash, AlertCircle } from "lucide-react"
-
-// Mock data inicial
-const initialStudents = [
-  { id: "1", name: "Ana García", matricula: "12345001", status: "Activo" },
-  { id: "2", name: "Carlos López", matricula: "12345002", status: "Activo" },
-  { id: "3", name: "María Rodríguez", matricula: "12345003", status: "Inactivo" },
-  { id: "4", name: "Juan Pérez", matricula: "12345004", status: "Activo" },
-  { id: "5", name: "Laura Martínez", matricula: "12345005", status: "Activo" },
-]
-
-// Componente personalizado para el botón del dropdown
-const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
-  <Button
-    variant="light"
-    size="sm"
-    ref={ref}
-    onClick={(e) => {
-      e.preventDefault()
-      onClick(e)
-    }}
-    className="border-0"
-  >
-    {children}
-  </Button>
-))
+import { useApi } from "../contexts/ApiContext"
 
 export function StudentsTable() {
-  const [students, setStudents] = useState(initialStudents)
+  const { students } = useApi()
+  const [studentsList, setStudentsList] = useState([])
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [currentStudent, setCurrentStudent] = useState(null)
   const [formData, setFormData] = useState({
     name: "",
-    matricula: "",
-    status: "Activo",
+    email: "",
+    group: "",
+    age: "",
+    gender: "",
   })
+
+  // Cargar estudiantes al montar el componente
+  useEffect(() => {
+    const loadStudents = async () => {
+      try {
+        const data = await students.getAll()
+        setStudentsList(data)
+      } catch (error) {
+        console.error("Error cargando estudiantes:", error)
+      }
+    }
+    loadStudents()
+  }, [])
 
   // Manejar cambios en el formulario
   const handleInputChange = (e) => {
@@ -54,8 +46,10 @@ export function StudentsTable() {
     setCurrentStudent(student)
     setFormData({
       name: student.name,
-      matricula: student.matricula,
-      status: student.status,
+      email: student.email,
+      group: student.group,
+      age: student.age,
+      gender: student.gender,
     })
     setShowEditModal(true)
   }
@@ -66,30 +60,48 @@ export function StudentsTable() {
     setShowDeleteModal(true)
   }
 
-  // Confirmar eliminación
-  const handleDelete = () => {
-    if (currentStudent) {
-      setStudents(students.filter((student) => student.id !== currentStudent.id))
-      setShowDeleteModal(false)
-      setCurrentStudent(null)
-      alert("Alumno eliminado correctamente")
-    }
-  }
-
-  // Guardar cambios
-  const handleSaveChanges = () => {
-    // Validación básica
-    if (!formData.name || !formData.matricula) {
+  // Guardar cambios en la edición
+  const handleSaveChanges = async () => {
+    if (!formData.name || !formData.email) {
       alert("Por favor complete todos los campos obligatorios")
       return
     }
 
-    if (currentStudent) {
-      setStudents(students.map((student) => (student.id === currentStudent.id ? { ...student, ...formData } : student)))
+    try {
+      await students.update(currentStudent._id, formData)
+      
+      setStudentsList(prev => 
+        prev.map(student => 
+          student._id === currentStudent._id ? { ...student, ...formData } : student
+        )
+      )
+      
       setShowEditModal(false)
       setCurrentStudent(null)
+      alert("Estudiante actualizado correctamente")
+    } catch (error) {
+      console.error("Error actualizando estudiante:", error)
+      alert("Error al actualizar el estudiante")
+    }
+  }
 
-      alert("Alumno actualizado correctamente")
+  // Eliminar estudiante
+  const handleDelete = async () => {
+    if (currentStudent) {
+      try {
+        await students.delete(currentStudent._id)
+        
+        setStudentsList(prev => 
+          prev.filter(student => student._id !== currentStudent._id)
+        )
+        
+        setShowDeleteModal(false)
+        setCurrentStudent(null)
+        alert("Estudiante eliminado correctamente")
+      } catch (error) {
+        console.error("Error eliminando estudiante:", error)
+        alert("Error al eliminar el estudiante")
+      }
     }
   }
 
@@ -100,24 +112,24 @@ export function StudentsTable() {
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Matricula</th>
-              <th>Estado</th>
+              <th>Email</th>
+              <th>Grupo</th>
+              <th>Edad</th>
+              <th>Género</th>
               <th style={{ width: "80px" }}></th>
             </tr>
           </thead>
           <tbody>
-            {students.map((student) => (
-              <tr key={student.id}>
+            {studentsList.map((student) => (
+              <tr key={student._id}>
                 <td className="fw-medium">{student.name}</td>
-                <td>{student.matricula}</td>
-                <td>
-                  <Badge bg={student.status === "Activo" ? "success" : "danger"} className="px-2 py-1">
-                    {student.status}
-                  </Badge>
-                </td>
+                <td>{student.email}</td>
+                <td>{student.group}</td>
+                <td>{student.age}</td>
+                <td>{student.gender}</td>
                 <td>
                   <Dropdown align="end">
-                    <Dropdown.Toggle as={CustomToggle} id={`dropdown-${student.id}`}>
+                    <Dropdown.Toggle variant="light" size="sm" className="border-0">
                       <MoreHorizontal size={18} />
                     </Dropdown.Toggle>
                     <Dropdown.Menu>
@@ -139,9 +151,9 @@ export function StudentsTable() {
       </div>
 
       {/* Modal de Edición */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Editar Alumno</Modal.Title>
+          <Modal.Title>Editar Estudiante</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form>
@@ -149,29 +161,67 @@ export function StudentsTable() {
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Nombre</Form.Label>
-                  <Form.Control type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </Form.Group>
               </Col>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Matricula</Form.Label>
+                  <Form.Label>Email</Form.Label>
                   <Form.Control
-                    type="text"
-                    name="matricula"
-                    value={formData.matricula}
+                    type="email"
+                    name="email"
+                    value={formData.email}
                     onChange={handleInputChange}
                     required
                   />
                 </Form.Group>
               </Col>
             </Row>
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Estado</Form.Label>
-                  <Form.Select name="status" value={formData.status} onChange={handleInputChange}>
-                    <option value="Activo">Activo</option>
-                    <option value="Inactivo">Inactivo</option>
+                  <Form.Label>Grupo</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="group"
+                    value={formData.group}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Edad</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="age"
+                    value={formData.age}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Género</Form.Label>
+                  <Form.Select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleInputChange}
+                  >
+                    <option value="Femenino">Femenino</option>
+                    <option value="Masculino">Masculino</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -197,7 +247,7 @@ export function StudentsTable() {
           <div className="d-flex align-items-center">
             <AlertCircle size={24} className="text-danger me-3" />
             <div>
-              <p className="mb-1">¿Estás seguro de que deseas eliminar a este alumno?</p>
+              <p className="mb-1">¿Estás seguro de que deseas eliminar este estudiante?</p>
               {currentStudent && <p className="mb-0 fw-bold">{currentStudent.name}</p>}
               <p className="text-muted small mt-2 mb-0">Esta acción no se puede deshacer.</p>
             </div>
@@ -215,4 +265,3 @@ export function StudentsTable() {
     </>
   )
 }
-

@@ -1,102 +1,112 @@
-"use client"
+"use client";
 
-import React, { useState } from "react"
-import { Table, Modal, Form, Row, Col, Button, Badge } from "react-bootstrap"
-import { MoreHorizontal, Pencil, Trash, AlertCircle } from "lucide-react"
-
-// Mock data inicial
-const initialTeachers = [
-  { id: "1", name: "Juan Pérez", email: "juan.perez@example.com", status: "Activo" },
-  { id: "2", name: "María López", email: "maria.lopez@example.com", status: "Activo" },
-  {
-    id: "3",
-    name: "Carlos Rodríguez",
-    email: "carlos.rodriguez@example.com",
-    status: "Inactivo",
-  },
-  { id: "4", name: "Ana Martínez", email: "ana.martinez@example.com", status: "Activo" },
-]
-
-
-// Componente personalizado para el botón del dropdown
-const CustomToggle = React.forwardRef(({ children, onClick }, ref) => (
-  <Button
-    variant="light"
-    size="sm"
-    ref={ref}
-    onClick={(e) => {
-      e.preventDefault()
-      onClick(e)
-    }}
-    className="border-0"
-  >
-    {children}
-  </Button>
-))
+import React, { useState, useEffect } from "react";
+import { Table, Modal, Form, Row, Col, Button, Badge } from "react-bootstrap";
+import { MoreHorizontal, Pencil, Trash, AlertCircle } from "lucide-react";
+import { useApi } from "../contexts/ApiContext";
 
 export function TeachersTable() {
-  const [teachers, setTeachers] = useState(initialTeachers)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [currentTeacher, setCurrentTeacher] = useState(null)
+  const { teachers } = useApi(); // Usa el contexto de la API
+  const [teachersList, setTeachersList] = useState([]); // Estado para almacenar los profesores
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [currentTeacher, setCurrentTeacher] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     status: "Activo",
-  })
+  });
 
-  // Manejar cambios en el formulario
+  // Cargar profesores al montar el componente
+  useEffect(() => {
+    const loadTeachers = async () => {
+      try {
+        const data = await teachers.getAll(); // Obtener profesores desde el backend
+        setTeachersList(data);
+      } catch (error) {
+        console.error("Error cargando docentes:", error);
+      }
+    };
+
+    loadTeachers();
+  }, []);
+
+  // Función para manejar cambios en el formulario
   const handleInputChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    })
-  }
+    });
+  };
 
-  // Abrir modal de edición
+  // Función para abrir el modal de edición
   const handleEdit = (teacher) => {
-    setCurrentTeacher(teacher)
+    setCurrentTeacher(teacher);
     setFormData({
       name: teacher.name,
       email: teacher.email,
       status: teacher.status,
-    })
-    setShowEditModal(true)
-  }
+    });
+    setShowEditModal(true);
+  };
 
-  // Abrir modal de eliminación
+  // Función para abrir el modal de eliminación
   const handleDeleteClick = (teacher) => {
-    setCurrentTeacher(teacher)
-    setShowDeleteModal(true)
-  }
+    setCurrentTeacher(teacher);
+    setShowDeleteModal(true);
+  };
 
-  // Confirmar eliminación
-  const handleDelete = () => {
-    if (currentTeacher) {
-      setTeachers(teachers.filter((teacher) => teacher.id !== currentTeacher.id))
-      setShowDeleteModal(false)
-      setCurrentTeacher(null)
-      alert("Docente eliminado correctamente")
-    }
-  }
-
-  // Guardar cambios
-  const handleSaveChanges = () => {
-    // Validar campos requeridos
+  // Función para guardar cambios en la edición
+  const handleSaveChanges = async () => {
     if (!formData.name || !formData.email) {
-      alert("Por favor complete todos los campos obligatorios")
-      return
+      alert("Por favor complete todos los campos obligatorios");
+      return;
     }
 
+    try {
+      if (currentTeacher) {
+        // Actualizar el profesor en el backend
+        await teachers.update(currentTeacher._id, formData);
+
+        // Actualizar el estado local
+        setTeachersList((prevTeachers) =>
+          prevTeachers.map((teacher) =>
+            teacher._id === currentTeacher._id ? { ...teacher, ...formData } : teacher
+          )
+        );
+
+        setShowEditModal(false);
+        setCurrentTeacher(null);
+        alert("Docente actualizado correctamente");
+      }
+    } catch (error) {
+      console.error("Error actualizando docente:", error);
+      alert("Hubo un error al actualizar el docente");
+    }
+  };
+
+  // Función para eliminar un profesor
+  const handleDelete = async () => {
     if (currentTeacher) {
-      setTeachers(teachers.map((teacher) => (teacher.id === currentTeacher.id ? { ...teacher, ...formData } : teacher)))
-      setShowEditModal(false)
-      setCurrentTeacher(null)
+      try {
+        // Eliminar el profesor en el backend
+        await teachers.delete(currentTeacher._id);
 
-      alert("Docente actualizado correctamente")
+        // Actualizar el estado local
+        setTeachersList((prevTeachers) =>
+          prevTeachers.filter((teacher) => teacher._id !== currentTeacher._id)
+        );
+
+        setShowDeleteModal(false);
+        setCurrentTeacher(null);
+        alert("Docente eliminado correctamente");
+      } catch (error) {
+        console.error("Error eliminando docente:", error);
+        alert("Hubo un error al eliminar el docente");
+      }
     }
-  }
+  };
 
   return (
     <>
@@ -111,8 +121,8 @@ export function TeachersTable() {
             </tr>
           </thead>
           <tbody>
-            {teachers.map((teacher) => (
-              <tr key={teacher.id}>
+            {teachersList.map((teacher) => (
+              <tr key={teacher._id}>
                 <td className="fw-medium">{teacher.name}</td>
                 <td>{teacher.email}</td>
                 <td>
@@ -127,9 +137,9 @@ export function TeachersTable() {
                       size="sm"
                       className="border-0"
                       onClick={(e) => {
-                        e.preventDefault()
-                        const dropdown = e.currentTarget.nextElementSibling
-                        dropdown.classList.toggle("show")
+                        e.preventDefault();
+                        const dropdown = e.currentTarget.nextElementSibling;
+                        dropdown.classList.toggle("show");
                       }}
                     >
                       <MoreHorizontal size={18} />
@@ -163,7 +173,13 @@ export function TeachersTable() {
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Nombre</Form.Label>
-                  <Form.Control type="text" name="name" value={formData.name} onChange={handleInputChange} required />
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </Form.Group>
               </Col>
               <Col md={6}>
@@ -183,7 +199,11 @@ export function TeachersTable() {
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Estado</Form.Label>
-                  <Form.Select name="status" value={formData.status} onChange={handleInputChange}>
+                  <Form.Select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                  >
                     <option value="Activo">Activo</option>
                     <option value="Inactivo">Inactivo</option>
                   </Form.Select>
@@ -227,6 +247,5 @@ export function TeachersTable() {
         </Modal.Footer>
       </Modal>
     </>
-  )
+  );
 }
-

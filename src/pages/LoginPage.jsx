@@ -18,7 +18,6 @@ function LoginPage() {
     try {
       await login(email, password)
     } catch (err) {
-      // El error ya se maneja en el contexto de autenticación
       console.error("Error de login:", err)
     }
   }
@@ -72,15 +71,6 @@ function LoginPage() {
                 </Button>
               </Form>
             </Card.Body>
-            <Card.Footer className="text-center py-3">
-              <p className="text-muted small mb-0">
-                Para probar, usa:
-                <br />
-                Admin: admin@example.com / password
-                <br />
-                Docente: teacher@example.com / password
-              </p>
-            </Card.Footer>
           </Card>
         </Col>
       </Row>
@@ -89,4 +79,3 @@ function LoginPage() {
 }
 
 export default LoginPage
-

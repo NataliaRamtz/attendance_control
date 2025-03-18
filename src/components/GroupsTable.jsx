@@ -237,4 +237,3 @@ export function GroupsTable({  onEdit, onDelete, onRefresh }) {
   )
 }
 
-
