@@ -7,9 +7,9 @@ import { AttendanceTable } from "../components/AttendanceTable"
 
 // Mock data
 const groups = [
-  { id: "1", name: "Grupo A - Matemáticas" },
-  { id: "2", name: "Grupo B - Física" },
-  { id: "3", name: "Grupo C - Química" },
+  { id: "1", name: "Grupo A" },
+  { id: "2", name: "Grupo B" },
+  { id: "3", name: "Grupo C" },
 ]
 
 const students = [

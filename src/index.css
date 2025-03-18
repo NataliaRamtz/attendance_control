@@ -107,6 +107,23 @@ body {
   font-weight: 500;
 }
 
+/* Estilos para breadcrumbs */
+.breadcrumb {
+  --bs-breadcrumb-divider: var(--breadcrumb-divider);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.breadcrumb-item.active {
+  font-weight: 500;
+}
+
 /* Transiciones suaves para cambios de tema */
 .table,
 .card,
@@ -116,4 +133,3 @@ body {
 .nav-link {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
-

@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Link, useNavigate, useLocation } from "react-router-dom"
 import { Container, Nav, Navbar, Button, Offcanvas } from "react-bootstrap"
-import { Users, BookOpen, LayoutDashboard, LogOut, Menu, User, Settings, BarChart } from "lucide-react"
+import { Users, BookOpen, LayoutDashboard, LogOut, Menu, User, Settings, BarChart, GraduationCap } from "lucide-react"
 import { ThemeToggle } from "./ThemeToggle"
+import { Breadcrumbs } from "./Breadcrumb"
 
 export function DashboardLayout({ children, userRole, onLogout }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showSidebar, setShowSidebar] = useState(false)
 
   const handleLogout = () => {
@@ -23,24 +25,29 @@ export function DashboardLayout({ children, userRole, onLogout }) {
     },
     {
       title: "Docentes",
-      href: "/admin/dashboard?tab=teachers",
+      href: "/admin/teachers",
       icon: Users,
     },
     {
       title: "Alumnos",
-      href: "/admin/dashboard?tab=students",
+      href: "/admin/students",
       icon: BookOpen,
     },
     {
+      title: "Grupos",
+      href: "/admin/groups",
+      icon: GraduationCap,
+    },
+    /*{
       title: "Reportes",
       href: "/admin/reports",
       icon: BarChart,
-    },
-    {
+    },*/
+    /*{
       title: "Configuración",
       href: "/admin/settings",
       icon: Settings,
-    },
+    },*/
   ]
 
   const teacherNavItems = [
@@ -69,15 +76,19 @@ export function DashboardLayout({ children, userRole, onLogout }) {
   const navItems = userRole === "admin" ? adminNavItems : teacherNavItems
   const userName = userRole === "admin" ? "Admin" : "Profesor"
 
+  useEffect(() => {
+    setShowSidebar(false)
+  }, [location.pathname])
+
   const renderSidebarContent = () => (
     <>
       <div className="d-flex align-items-center p-3 border-bottom">
-        <Link to="/" className="text-decoration-none">
-          <h5 className="mb-0 fw-bold">AttendanceTrack</h5>
-        </Link>
+        {/*<Link to="/" className="text-decoration-none">*/}
+          <h5 className="mb-0 fw-bold text-primary">Control de Asistencias</h5>
+        {/*</Link>*/}
       </div>
       <div className="p-3">
-        <small className="text-uppercase text-muted fw-bold d-block mb-2">Navegación</small>
+        <small className="text-uppercase text-muted fw-bold d-block mb-2">Menú</small>
         <Nav className="flex-column">
           {navItems.map((item) => (
             <Nav.Link
@@ -129,8 +140,8 @@ export function DashboardLayout({ children, userRole, onLogout }) {
             <Button variant="light" className="me-2 border" onClick={() => setShowSidebar(true)}>
               <Menu size={18} />
             </Button>
-            <Navbar.Brand as={Link} to="/" className="mx-auto">
-              AttendanceTrack
+            <Navbar.Brand /*as={Link} to="/"*/ className="mx-auto">
+              Control de Asistencias
             </Navbar.Brand>
             <div className="d-flex align-items-center">
               <ThemeToggle />
@@ -140,7 +151,12 @@ export function DashboardLayout({ children, userRole, onLogout }) {
         </Navbar>
 
         {/* Page content */}
-        <div className="flex-grow-1">{children}</div>
+        <div className="flex-grow-1">
+          <Container fluid className="px-3 px-md-4">
+            <Breadcrumbs />
+            {children}
+          </Container>
+        </div>
       </div>
     </div>
   )

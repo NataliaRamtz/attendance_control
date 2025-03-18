@@ -1,41 +1,25 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
 import { Container, Row, Col, Form, Button, Card, Alert } from "react-bootstrap"
+import { Link } from "react-router-dom"
 import { AlertCircle } from "lucide-react"
 import { ThemeToggle } from "../components/ThemeToggle"
+import { useAuth } from "../contexts/AuthContext"
 
-function LoginPage({ onLogin }) {
-  const navigate = useNavigate()
+function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const { login, loading, error } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError("")
 
     try {
-      // Simulate authentication
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // In a real app, you would validate credentials with your backend
-      if (email === "admin@example.com" && password === "password") {
-        onLogin("admin")
-        navigate("/admin/dashboard")
-      } else if (email === "teacher@example.com" && password === "password") {
-        onLogin("teacher")
-        navigate("/teacher/dashboard")
-      } else {
-        setError("Credenciales inválidas. Por favor intenta de nuevo.")
-      }
+      await login(email, password)
     } catch (err) {
-      setError("Ocurrió un error al iniciar sesión. Por favor intenta de nuevo.")
-    } finally {
-      setIsLoading(false)
+      // El error ya se maneja en el contexto de autenticación
+      console.error("Error de login:", err)
     }
   }
 
@@ -83,8 +67,8 @@ function LoginPage({ onLogin }) {
                     required
                   />
                 </Form.Group>
-                <Button type="submit" variant="primary" className="w-100" disabled={isLoading}>
-                  {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
+                <Button type="submit" variant="primary" className="w-100" disabled={loading}>
+                  {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
                 </Button>
               </Form>
             </Card.Body>
